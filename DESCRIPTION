@@ -1,0 +1,13 @@
+Package: nucleaRmcmc
+Type: Package
+Title: Fast MCMC for Suz's BHM projects in R using Rcpp 
+Version: 1.0
+Date: 2015-07-14
+Author: Suz Tolwinski-Ward
+Maintainer: Suz Tolwinski-Ward <suzski@gmail.com>
+Description: Fast MCMC for Bayesian hierarchical modeling projects in R, using cpp and Armadillo via Rcpp  and RcppArmadillo packages.
+License: GPL (>= 2)
+Imports: Rcpp (>= 0.11.5),
+         RcppArmadillo (>= 0.4.650)
+LinkingTo: Rcpp,
+           RcppArmadillo
