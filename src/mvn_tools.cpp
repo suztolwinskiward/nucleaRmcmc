@@ -59,7 +59,7 @@ arma::vec rm_sngl_vec_entry(arma::vec x, int jOmit) {
 ///////////////////////////////////////////////////////////////////////////////
 //' Fast conditional sampling multivar. normal vector entry given all others.
 //' 
-//' \code{r_cond_mvn_cpp2} 
+//' \code{rmvn_cond_cpp} 
 //' 
 //' @param mu Mean vector of MVN distribution
 //' @param cholSigma Cholesky decomposition of the covariance matrix of the MVN 
@@ -90,6 +90,92 @@ List rmvn_cond_cpp(arma::vec mu, arma::mat cholSigma, arma::mat iSigma,
                       Named("adjust") = adjust,
                       Named("sig.jj") = iSigma_jj);
 }
+
+///////////////////////////////////////////////////////////////////////////////
+#include <RcppArmadillo.h>
+using namespace Rcpp;
+using namespace arma;
+using namespace std;
+
+//' Following Rodriguez-Yam, http://www.stat.columbia.edu/~rdavis/papers/CLR.pdf
+//'
+//'  Result from Rodriguez-Yam:
+//'  Given
+//'      X ~ N_T(mu,Sigma), where T = {x : Bx <= b}
+//'  Define 
+//'      Z := AX, with A s.t. A %*% Sigma %*% t(A) = I (eg. the lower-triangular
+//'                                                     cholesky decomposition)
+//'  Then Z ~ N_S(A%*% mu, I) ~ N(alpha,I) 
+//'          where S = {z: Dz <= b}, D = B %*% inverse(A), and alpha = A %*% mu.
+//'  
+//'  Then marginals have structure
+//'    z_j|z_-j ~ N_S_j(alpha_j,1) 
+//'          where S_j = {z_j : d_j z_j <= b - D_-j z_-j}
+//'                      
+//' @param x
+//' @param mu
+//' @param Sig The covariance matrix
+//' @param B Transformation matrix for x to give constraints BX <= b
+//' @param b The vector giving the constraints BX <= b 
+//'
+// [[Rcpp::export()]]
+arma::mat r_truncmvn_cpp(NumericMatrix x, NumericMatrix mu,
+NumericMatrix Sig, NumericMatrix B, NumericMatrix b){
+  
+  int N = mu.nrow();
+  
+  // Now simulate:
+  arma::mat A = arma::trans(arma::inv(trimatu(arma::chol(as<arma::mat>(Sig)))));
+  arma::vec alpha = A * as<arma::vec>(mu);
+  arma::mat D = as<arma::mat>(B) * arma::inv(A);
+  arma::vec z = A * as<arma::vec>(x);
+  
+  for(int j = 0; j < N; j++){
+    
+    // Matrix/vector subsets needed:
+    arma::mat Dmj = D; // "D minus j"
+    Dmj.shed_col(j); 
+    arma::vec zmj = z; // "z minus j"
+    zmj.shed_row(j); 
+    
+    //  
+    
+    arma::mat bds = (as<arma::mat>(b) - Dmj * zmj)/D.col(j); 
+    arma::mat lhs_bds = D.col(j);
+    
+    uvec ub_i = find(lhs_bds > 0);
+    NumericVector uj;
+    if(ub_i.size()==0){
+      uj = datum::inf;
+    }else{
+      uj = min(bds(ub_i));
+    }
+    
+    uvec lb_i = find(lhs_bds < 0);
+    NumericVector lj;
+    if(lb_i.size()==0){
+      lj = -datum::inf;
+    }else{
+      lj = max(bds(lb_i));
+    }
+    
+    NumericVector u_lj = pnorm(lj,alpha[j],1.0);
+    NumericVector u_uj = pnorm(uj,alpha[j],1.0);
+    NumericVector u = runif(1,u_lj[0],u_uj[0]);
+    
+    if(u[0] == 1){z[j] <- lj;}
+    if(u[0] == 0){z[j] <- uj;}
+    if((u[0] > 0) & (u[0] < 1)){
+      NumericVector tmp = qnorm(u,alpha[j],1.0);
+      z[j] = tmp[0];}
+  }
+  
+  return(arma::solve(A,z));
+  
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 
 
 

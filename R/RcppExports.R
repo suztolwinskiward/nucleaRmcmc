@@ -34,7 +34,7 @@ rm_sngl_vec_entry <- function(x, jOmit) {
 
 #' Fast conditional sampling multivar. normal vector entry given all others.
 #' 
-#' \code{r_cond_mvn_cpp2} 
+#' \code{r_cond_mvn_cpp} 
 #' 
 #' @param mu Mean vector of MVN distribution
 #' @param cholSigma Cholesky decomposition of the covariance matrix of the MVN 
@@ -47,5 +47,30 @@ rm_sngl_vec_entry <- function(x, jOmit) {
 #' @export
 rmvn_cond_cpp <- function(mu, cholSigma, iSigma, x, jOmit) {
     .Call('nucleaRmcmc_rmvn_cond_cpp', PACKAGE = 'nucleaRmcmc', mu, cholSigma, iSigma, x, jOmit)
+}
+
+#' Following Rodriguez-Yam, http://www.stat.columbia.edu/~rdavis/papers/CLR.pdf
+#'
+#'  Result from Rodriguez-Yam:
+#'  Given
+#'      X ~ N_T(mu,Sigma), where T = {x : Bx <= b}
+#'  Define 
+#'      Z := AX, with A s.t. A %*% Sigma %*% t(A) = I (eg. the lower-triangular
+#'                                                     cholesky decomposition)
+#'  Then Z ~ N_S(A%*% mu, I) ~ N(alpha,I) 
+#'          where S = {z: Dz <= b}, D = B %*% inverse(A), and alpha = A %*% mu.
+#'  
+#'  Then marginals have structure
+#'    z_j|z_-j ~ N_S_j(alpha_j,1) 
+#'          where S_j = {z_j : d_j z_j <= b - D_-j z_-j}
+#'                      
+#' @param x
+#' @param mu
+#' @param Sig The covariance matrix
+#' @param B Transformation matrix for x to give constraints BX <= b
+#' @param b The vector giving the constraints BX <= b 
+#'
+r_truncmvn_cpp <- function(x, mu, Sig, B, b) {
+    .Call('nucleaRmcmc_r_truncmvn_cpp', PACKAGE = 'nucleaRmcmc', x, mu, Sig, B, b)
 }
 

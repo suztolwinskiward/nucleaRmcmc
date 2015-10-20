@@ -45,3 +45,18 @@ BEGIN_RCPP
     return __result;
 END_RCPP
 }
+// r_truncmvn_cpp
+arma::mat r_truncmvn_cpp(NumericMatrix x, NumericMatrix mu, NumericMatrix Sig, NumericMatrix B, NumericMatrix b);
+RcppExport SEXP nucleaRmcmc_r_truncmvn_cpp(SEXP xSEXP, SEXP muSEXP, SEXP SigSEXP, SEXP BSEXP, SEXP bSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject __result;
+    Rcpp::RNGScope __rngScope;
+    Rcpp::traits::input_parameter< NumericMatrix >::type x(xSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type mu(muSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type Sig(SigSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type B(BSEXP);
+    Rcpp::traits::input_parameter< NumericMatrix >::type b(bSEXP);
+    __result = Rcpp::wrap(r_truncmvn_cpp(x, mu, Sig, B, b));
+    return __result;
+END_RCPP
+}
